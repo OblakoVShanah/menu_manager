@@ -1,0 +1,118 @@
+<mxfile host="65bd71144e">
+    <diagram name="Page-1" id="0">
+        <mxGraphModel dx="1027" dy="642" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="Human" value="Human" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="60" width="50" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="TelegramBot" value="TelegramBot" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;" parent="1" vertex="1">
+                    <mxGeometry x="190" y="60" width="80" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="MenuManager" value="MenuManager" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="60" width="90" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="Database" value="Data manager" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="60" width="70" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="ChatGPT" value="ChatGPT" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="60" width="50" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="BarnManager" value="StoreManager" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="60" width="80" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge100" value="ask 'What to eat'" style="html=1;endArrow=block;" parent="1" source="Human" target="TelegramBot" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="90" y="110"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge101" value="request meal &amp; recipes" style="html=1;endArrow=block;" parent="1" source="TelegramBot" target="MenuManager" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="240" y="120"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge102" value="check if planned&lt;br&gt;menu exists" style="html=1;endArrow=block;" parent="1" source="MenuManager" target="Database" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="490" y="130"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge103" value="ask for menu if not exist" style="html=1;endArrow=block;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;connectable=1;" parent="1" source="MenuManager" target="ChatGPT" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="450" y="150"/>
+                            <mxPoint x="590" y="150"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge104" value="return menu" style="html=1;endArrow=block;" parent="1" source="ChatGPT" target="MenuManager" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="170"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge105" value="store menu" style="html=1;endArrow=block;" parent="1" source="MenuManager" target="Database" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="490" y="200"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge106" value="check food stock" style="html=1;endArrow=block;" parent="1" source="BarnManager" target="Database" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="750" y="290"/>
+                            <mxPoint x="560" y="290"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="edge107" value="ask for products needs buying" style="html=1;endArrow=block;" parent="1" source="MenuManager" target="BarnManager" edge="1">
+                    <mxGeometry x="-0.0012" relative="1" as="geometry">
+                        <mxPoint x="420" y="260" as="sourcePoint"/>
+                        <Array as="points">
+                            <mxPoint x="760" y="260"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="6" value="return list of products need byuing" style="html=1;endArrow=block;" parent="1" source="BarnManager" target="MenuManager" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="800" y="330" as="sourcePoint"/>
+                        <mxPoint x="520.0004347826087" y="330" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="755" y="310"/>
+                            <mxPoint x="565" y="310"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="10" value="return meal and&lt;br&gt;shopping list&amp;nbsp;" style="html=1;endArrow=block;exitX=0.517;exitY=0.9;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="MenuManager" target="TelegramBot" edge="1">
+                    <mxGeometry x="0.1129" relative="1" as="geometry">
+                        <mxPoint x="239.63043478260875" y="380" as="sourcePoint"/>
+                        <mxPoint x="384.5" y="380" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="310" y="330"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="11" value="return meal and&lt;br&gt;shopping list&amp;nbsp;" style="html=1;endArrow=block;exitX=0.5;exitY=0.933;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="TelegramBot" edge="1">
+                    <mxGeometry x="0.1129" relative="1" as="geometry">
+                        <mxPoint x="216.89999999999998" y="339.9999999999999" as="sourcePoint"/>
+                        <mxPoint x="80" y="340" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="150.37" y="340"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
