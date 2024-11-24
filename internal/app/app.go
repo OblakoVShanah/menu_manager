@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log"
 	"menu_manager/internal/menu"
-	menuStore "menu_manager/internal/menu/postgres"
-	"menu_manager/internal/storage"
-	storageStore "menu_manager/internal/storage/postgres"
+	storage "menu_manager/internal/menu/mysql"
 	"net/http"
 	"os"
 	"os/signal"
@@ -56,25 +54,18 @@ func (a *App) Setup(ctx context.Context, dsn string) error {
 		return fmt.Errorf("не удалось выполнить ping базы данных: %w", err)
 	}
 
-	// Инициализация хранилища store
-	storeS := storageStore.NewStorage(db)
-
-	// Инициализация сервиса store
-	serviceS := storage.NewService(storeS)
-
-	// Инициализация и регистрация обработчиков store
-	handlerS := storage.NewHandler(a.router, serviceS)
-	handlerS.Register()
+	// Инициализация клиента для barn manaager
+	client := menu.NewClient(a.http.Addr)
 
 	// Инициализация хранилища menu
-	storeM := menuStore.NewStorage(db)
+	store := storage.NewStorage(db)
 
 	// Инициализация сервиса menu
-	serviceM := menu.NewService(storeM)
+	service := menu.NewService(store, client)
 
 	// Инициализация и регистрация обработчиков menu
-	handlerM := menu.NewHandler(a.router, serviceM)
-	handlerM.Register()
+	handler := menu.NewHandler(a.router, service)
+	handler.Register()
 
 	return nil
 }

@@ -1,12 +1,12 @@
 -- migrate -database "mysql://menu_manager:menu_manager@tcp(localhost:3306)/menu_test" -path /Users/doblakov/magistratura/hw/go/havchik_podbirator/menu_manager/migrations up
 
-CREATE TABLE menu (
+CREATE TABLE menu_test.menu (
     meal_id VARCHAR(36) PRIMARY KEY,
     eat_date TIMESTAMP NOT NULL,
     user_id VARCHAR(36) NOT NULL
 );
 
-CREATE TABLE dishes (
+CREATE TABLE menu_test.dishes (
     meal_id VARCHAR(36) NOT NULL,
     dish_id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -17,12 +17,12 @@ CREATE TABLE dishes (
 
 
 -- Insert example data
-INSERT INTO menu (meal_id, eat_date, user_id) VALUES
+INSERT INTO menu_test.menu (meal_id, eat_date, user_id) VALUES
 ('1', '2024-03-20 08:00:00', 'kolya'),
 ('2', '2024-03-20 13:00:00', 'kolya'),
 ('3', '2024-03-20 19:00:00', 'dan');
 
-INSERT INTO dishes (meal_id, dish_id, name, type, recipie, total_nutrition) VALUES
+INSERT INTO menu_test.dishes (meal_id, dish_id, name, type, recipie, total_nutrition) VALUES
 ('1', '1', 'Овсяная каша', 'breakfast', 
     JSON_OBJECT(
         'ingredients', JSON_ARRAY(

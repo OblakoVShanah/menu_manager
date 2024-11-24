@@ -1,4 +1,4 @@
-package postgres_test
+package mysql_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"menu_manager/internal/menu"
 	"menu_manager/internal/menu/postgres"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 )
@@ -25,11 +26,11 @@ func TestStorage_SaveAndLoadMenu(t *testing.T) {
 	ctx := context.Background()
 
 	testMenu := &menu.Menu{
-		ID:        "test-id",
-		UserID:    "test-user",
-		StartDate: time.Now().Truncate(time.Second),
-		EndDate:   time.Now().Add(24 * time.Hour).Truncate(time.Second),
-		CreatedAt: time.Now().Truncate(time.Second),
+		ID:          "test-id",
+		UserID:      "test-user",
+		StartDate:   time.Now().Truncate(time.Second),
+		EndDate:     time.Now().Add(24 * time.Hour).Truncate(time.Second),
+		CreatedAt:   time.Now().Truncate(time.Second),
 		GeneratedBy: "test",
 	}
 
