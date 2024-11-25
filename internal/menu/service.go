@@ -24,22 +24,22 @@ func NewService(storage Store, client Client) Service {
 func (s *AppService) GetMeal(ctx context.Context, userID string) (*Meal, string, error) {
 
 	// получаем меню
-	menu, err := s.getMenu(ctx, userID)
+	menu, err := s.GetMenu(ctx, userID)
 	if err != nil {
 		return nil, "", err // can't get menu
 	}
 
 	// проверка на актуальность меню
-	if !isActual(menu) {
+	if !IsActual(menu) {
 		// если устарело, то обновляем меню
-		menu, err = s.rescheduleMenu(ctx, menu, userID)
+		menu, err = s.RescheduleMenu(ctx, menu, userID)
 		if err != nil {
 			return nil, "", err // can't get menu
 		}
 	}
 
 	// выбираем прием пищи ближайщий по времени
-	mealID, err := findClosestMeal(menu)
+	mealID, err := FindClosestMeal(menu)
 	if err != nil {
 		return nil, "", err
 	}
@@ -51,7 +51,7 @@ func (s *AppService) GetMeal(ctx context.Context, userID string) (*Meal, string,
 	}
 
 	// запрос продуктов в barn manager
-	products, err := s.getProducts(ctx, meal.Recipes)
+	products, err := s.GetProducts(ctx, meal.Recipes)
 	if err != nil {
 		return nil, "", err
 	}
@@ -60,7 +60,7 @@ func (s *AppService) GetMeal(ctx context.Context, userID string) (*Meal, string,
 }
 
 // isActual проверяет наличие блюд на сегодняшний день в меню
-func isActual(menu []Menu) bool {
+func IsActual(menu []Menu) bool {
 	// Получаем текущую дату
 	now := time.Now()
 	for _, v := range menu {
@@ -73,7 +73,7 @@ func isActual(menu []Menu) bool {
 }
 
 // findClosestMeal возвращает id ближайшего приема пищи
-func findClosestMeal(menu []Menu) (string, error) {
+func FindClosestMeal(menu []Menu) (string, error) {
 
 	// Получаем текущую дату
 	now := time.Now()
@@ -93,7 +93,7 @@ func findClosestMeal(menu []Menu) (string, error) {
 }
 
 // GetMenu возвращает меню по ID
-func (s *AppService) getMenu(ctx context.Context, userID string) ([]Menu, error) {
+func (s *AppService) GetMenu(ctx context.Context, userID string) ([]Menu, error) {
 
 	// получил блюдо
 	menu, err := s.storage.LoadMenu(ctx, userID)
@@ -105,7 +105,7 @@ func (s *AppService) getMenu(ctx context.Context, userID string) ([]Menu, error)
 }
 
 // rescheduleMenu обновляет время и даты приемов пищи
-func (s *AppService) rescheduleMenu(ctx context.Context, currentMenu []Menu, userID string) ([]Menu, error) {
+func (s *AppService) RescheduleMenu(ctx context.Context, currentMenu []Menu, userID string) ([]Menu, error) {
 
 	// Перемешиваем время приемов пищи случайным образом
 	rand.Shuffle(len(currentMenu), func(i, j int) {
@@ -124,7 +124,7 @@ func (s *AppService) rescheduleMenu(ctx context.Context, currentMenu []Menu, use
 }
 
 // GetMenu возвращает меню по ID
-func (s *AppService) getProducts(ctx context.Context, recipes []string) (string, error) {
+func (s *AppService) GetProducts(ctx context.Context, recipes []string) (string, error) {
 
 	// отсылаем рецепты в barn manager и получаем список продуктов
 	products, err := s.client.GetProducts(ctx, recipes)

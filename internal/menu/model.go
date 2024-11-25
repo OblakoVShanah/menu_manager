@@ -37,6 +37,10 @@ const (
 type Service interface {
 	// GetMeal возвращает прием пищи и его рецепт со списком продуктов, которые нужно докупить
 	GetMeal(ctx context.Context, userID string) (*Meal, string, error)
+	// rescheduleMenu обновляет время и даты приемов пищи
+	RescheduleMenu(ctx context.Context, currentMenu []Menu, userID string) ([]Menu, error)
+	// GetMenu возвращает меню по ID
+	GetMenu(ctx context.Context, userID string) ([]Menu, error)
 }
 
 // Store определяет интерфейс для хранения меню

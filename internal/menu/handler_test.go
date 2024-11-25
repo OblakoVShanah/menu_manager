@@ -1,103 +1,85 @@
 package menu_test
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
+	"menu_manager/internal/menu"
+	mocks "menu_manager/internal/menu/mock"
+	common "menu_manager/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"menu_manager/internal/menu"
-	"menu_manager/internal/menu/mock"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/go-cmp/cmp"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestHandler_CreateMenu(t *testing.T) {
-	mockStore := mock.NewStore()
+func TestGetMeal_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Создаем мок для Service
+	mockService := mocks.NewMockService(ctrl)
+
+	// Данные для теста
+	expectedMeal := menu.Meal{
+		MealID:         "meal1",
+		DishIDs:        []string{"eggs", "bread"},
+		DishNames:      []string{"eggs", "bread"},
+		Type:           "Breakfast",
+		Recipes:        []string{"eggs", "bread"},
+		TotalNutrition: common.NutritionalValueAbsolute{Proteins: 10, Fats: 10, Carbohydrates: 30, Calories: 300},
+	}
+	expectedProducts := "eggs, bread"
+	mockService.EXPECT().GetMeal(gomock.Any(), "123").Return(&expectedMeal, expectedProducts, nil)
+
+	// Создаем HTTP-реквест и респонс
 	router := chi.NewRouter()
-	service := menu.NewService(mockStore)
-	handler := menu.NewHandler(router, service)
+	handler := menu.NewHandler(router, mockService)
 	handler.Register()
 
-	t.Run("successful create", func(t *testing.T) {
-		req := menu.CreateMenuRequest{
-			UserID:    "test-user",
-			StartDate: time.Now(),
-			EndDate:   time.Now().Add(24 * time.Hour),
-		}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/menus/getMeal", nil)
+	rec := httptest.NewRecorder()
 
-		body, err := json.Marshal(req)
-		if err != nil {
-			t.Fatalf("Failed to marshal request: %v", err)
-		}
+	// Выполняем запрос
+	router.ServeHTTP(rec, req)
 
-		r := httptest.NewRequest(http.MethodPost, "/api/v1/menus", bytes.NewBuffer(body))
-		w := httptest.NewRecorder()
+	// Проверяем результат
+	assert.Equal(t, http.StatusOK, rec.Code)
 
-		router.ServeHTTP(w, r)
-
-		if w.Code != http.StatusCreated {
-			t.Errorf("Expected status code %d, got %d", http.StatusCreated, w.Code)
-		}
-
-		var response menu.Menu
-		if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
-			t.Fatalf("Failed to decode response: %v", err)
-		}
-
-		if response.UserID != req.UserID {
-			t.Errorf("Expected user ID %s, got %s", req.UserID, response.UserID)
-		}
-	})
-
-	t.Run("invalid request", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/api/v1/menus", bytes.NewBufferString("invalid json"))
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, r)
-
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("Expected status code %d, got %d", http.StatusBadRequest, w.Code)
-		}
-	})
+	var response struct {
+		Meal         menu.Meal `json:"meal"`
+		ShoppingList string    `json:"shopping_list"`
+	}
+	err := json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMeal, response.Meal)
+	assert.Equal(t, expectedProducts, response.ShoppingList)
 }
 
-func TestHandler_GetMenu(t *testing.T) {
-	mockStore := mock.NewStore()
+func TestGetMeal_Error(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Создаем мок для Service
+	mockService := mocks.NewMockService(ctrl)
+
+	// Настройка мока для ошибки
+	mockService.EXPECT().GetMeal(gomock.Any(), "123").Return(nil, "", errors.New("service error"))
+
+	// Создаем HTTP-реквест и респонс
 	router := chi.NewRouter()
-	service := menu.NewService(mockStore)
-	handler := menu.NewHandler(router, service)
+	handler := menu.NewHandler(router, mockService)
 	handler.Register()
 
-	testMenu := &menu.Menu{
-		ID:        "test-id",
-		UserID:    "test-user",
-		StartDate: time.Now(),
-		EndDate:   time.Now().Add(24 * time.Hour),
-		CreatedAt: time.Now(),
-	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/menus/getMeal", nil)
+	rec := httptest.NewRecorder()
 
-	mockStore.SetMenu(testMenu)
+	// Выполняем запрос
+	router.ServeHTTP(rec, req)
 
-	t.Run("successful get", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodGet, "/api/v1/menus/"+testMenu.ID, nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, r)
-
-		if w.Code != http.StatusOK {
-			t.Errorf("Expected status code %d, got %d", http.StatusOK, w.Code)
-		}
-
-		var response menu.Menu
-		if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
-			t.Fatalf("Failed to decode response: %v", err)
-		}
-
-		if diff := cmp.Diff(testMenu, &response); diff != "" {
-			t.Errorf("Response mismatch (-want +got):\n%s", diff)
-		}
-	})
+	// Проверяем результат
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.Contains(t, rec.Body.String(), "service error")
 }

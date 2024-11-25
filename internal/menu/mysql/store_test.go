@@ -2,68 +2,153 @@ package mysql_test
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"menu_manager/internal/menu"
+	"menu_manager/internal/menu/mysql"
+	common "menu_manager/internal/models"
 	"testing"
 	"time"
 
-	"menu_manager/internal/menu"
-	"menu_manager/internal/menu/postgres"
-
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
-func setupTestDB(t *testing.T) *sqlx.DB {
-	db, err := sqlx.Connect("postgres", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
-	require.NoError(t, err)
-	return db
-}
-
-func TestStorage_SaveAndLoadMenu(t *testing.T) {
-	db := setupTestDB(t)
+func TestLoadMenu_Success(t *testing.T) {
+	// Создаем мок для sql.DB
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
 	defer db.Close()
 
-	storage := postgres.NewStorage(db)
-	ctx := context.Background()
+	// Оборачиваем *sql.DB в *sqlx.DB
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
 
-	testMenu := &menu.Menu{
-		ID:          "test-id",
-		UserID:      "test-user",
-		StartDate:   time.Now().Truncate(time.Second),
-		EndDate:     time.Now().Add(24 * time.Hour).Truncate(time.Second),
-		CreatedAt:   time.Now().Truncate(time.Second),
-		GeneratedBy: "test",
+	mockRows := sqlmock.NewRows([]string{"meal_id", "eat_date", "meal_type"}).
+		AddRow("meal1", time.Now(), "lunch").
+		AddRow("meal2", time.Now().Add(1*time.Hour), "dinner")
+
+	mock.ExpectQuery(`SELECT meal_id, eat_date, meal_type FROM menu WHERE user_id = \$1`).
+		WithArgs("123").
+		WillReturnRows(mockRows)
+
+	storage := mysql.NewStorage(sqlxDB)
+
+	menus, err := storage.LoadMenu(context.Background(), "123")
+	assert.NoError(t, err)
+	assert.Len(t, menus, 2)
+	assert.Equal(t, "meal1", menus[0].MealID)
+	assert.Equal(t, "lunch", menus[0].MealType)
+}
+
+func TestLoadMenu_QueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+
+	mock.ExpectQuery(`SELECT meal_id, eat_date, meal_type FROM menu WHERE user_id = \$1`).
+		WithArgs("123").
+		WillReturnError(sql.ErrConnDone)
+
+	storage := mysql.NewStorage(sqlxDB)
+
+	_, err = storage.LoadMenu(context.Background(), "123")
+	assert.Error(t, err)
+}
+
+func TestLoadMeal_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+
+	nutrition := common.NutritionalValueAbsolute{
+		Proteins:      10,
+		Fats:          5,
+		Carbohydrates: 20,
+		Calories:      200,
+	}
+	nutritionJSON, _ := json.Marshal(nutrition)
+
+	mockRows := sqlmock.NewRows([]string{"dish_id", "name", "recipe", "total_nutrition"}).
+		AddRow("dish1", "Pasta", "recipe1", nutritionJSON).
+		AddRow("dish2", "Salad", "recipe2", nutritionJSON)
+
+	mock.ExpectQuery(`SELECT dish_id, name, recipe, total_nutrition FROM dishes WHERE meal_id = \$1`).
+		WithArgs("meal1").
+		WillReturnRows(mockRows)
+
+	storage := mysql.NewStorage(sqlxDB)
+
+	meal, err := storage.LoadMeal(context.Background(), "meal1")
+	assert.NoError(t, err)
+	assert.Equal(t, "meal1", meal.MealID)
+	assert.Len(t, meal.DishIDs, 2)
+	assert.Equal(t, nutrition, meal.TotalNutrition)
+}
+
+func TestLoadMeal_QueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+
+	mock.ExpectQuery(`SELECT dish_id, name, recipe, total_nutrition FROM dishes WHERE meal_id = \$1`).
+		WithArgs("meal1").
+		WillReturnError(sql.ErrConnDone)
+
+	storage := mysql.NewStorage(sqlxDB)
+
+	_, err = storage.LoadMeal(context.Background(), "meal1")
+	assert.Error(t, err)
+}
+
+func TestUpdateMenu_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`UPDATE menu SET eat_date = \$1 WHERE userID = \$2 AND meal_id = \$3`).
+		WithArgs(sqlmock.AnyArg(), "123", "meal1").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	storage := mysql.NewStorage(sqlxDB)
+
+	menus := []menu.Menu{
+		{MealID: "meal1", Time: time.Now()},
 	}
 
-	t.Run("save menu", func(t *testing.T) {
-		err := storage.SaveMenu(ctx, testMenu)
-		require.NoError(t, err)
-	})
+	err = storage.UpdateMenu(context.Background(), "123", menus)
+	assert.NoError(t, err)
+}
 
-	t.Run("load menu", func(t *testing.T) {
-		loaded, err := storage.LoadMenu(ctx, testMenu.ID)
-		require.NoError(t, err)
-		require.NotNil(t, loaded)
+func TestUpdateMenu_QueryError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
 
-		require.Equal(t, testMenu.ID, loaded.ID)
-		require.Equal(t, testMenu.UserID, loaded.UserID)
-		require.Equal(t, testMenu.StartDate, loaded.StartDate)
-		require.Equal(t, testMenu.EndDate, loaded.EndDate)
-		require.Equal(t, testMenu.GeneratedBy, loaded.GeneratedBy)
-	})
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
 
-	t.Run("load menus by user", func(t *testing.T) {
-		menus, err := storage.LoadMenusByUser(ctx, testMenu.UserID)
-		require.NoError(t, err)
-		require.NotEmpty(t, menus)
+	mock.ExpectBegin()
+	mock.ExpectExec(`UPDATE menu SET eat_date = \$1 WHERE userID = \$2 AND meal_id = \$3`).
+		WithArgs(sqlmock.AnyArg(), "123", "meal1").
+		WillReturnError(sql.ErrConnDone)
+	mock.ExpectRollback()
 
-		found := false
-		for _, m := range menus {
-			if m.ID == testMenu.ID {
-				found = true
-				require.Equal(t, testMenu.UserID, m.UserID)
-				break
-			}
-		}
-		require.True(t, found, "Saved menu not found in user's menus")
-	})
+	storage := mysql.NewStorage(sqlxDB)
+
+	menus := []menu.Menu{
+		{MealID: "meal1", Time: time.Now()},
+	}
+
+	err = storage.UpdateMenu(context.Background(), "123", menus)
+	assert.Error(t, err)
 }

@@ -2,94 +2,113 @@ package menu_test
 
 import (
 	"context"
-	"errors"
+	menu "menu_manager/internal/menu"
+	mocks "menu_manager/internal/menu/mock"
+	"menu_manager/internal/oops"
 	"testing"
 	"time"
 
-	"menu_manager/internal/menu"
-	"menu_manager/internal/menu/mock"
-	"menu_manager/internal/oops"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestService_CreateMenu(t *testing.T) {
-	store := mock.NewStore()
-	service := menu.NewService(store)
+func TestGetMeal(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStore := mocks.NewMockStore(ctrl)
+	mockClient := mocks.NewMockClient(ctrl)
+	service := menu.NewService(mockStore, mockClient)
+
 	ctx := context.Background()
+	userID := "123"
+	menuData := []menu.Menu{
+		{MealID: "meal1", Time: time.Now().Add(1 * time.Hour), MealType: "lunch"},
+		{MealID: "meal2", Time: time.Now().Add(2 * time.Hour), MealType: "dinner"},
+	}
+	expectedMeal := &menu.Meal{MealID: "meal1", Recipes: []string{"recipe1", "recipe2"}}
+	expectedProducts := "product1, product2"
 
-	t.Run("successful create", func(t *testing.T) {
-		userID := "test-user"
-		startDate := time.Now()
-		endDate := startDate.Add(24 * time.Hour)
+	mockStore.EXPECT().LoadMenu(ctx, userID).Return(menuData, nil)
+	mockStore.EXPECT().LoadMeal(ctx, "meal1").Return(expectedMeal, nil)
+	mockClient.EXPECT().GetProducts(ctx, expectedMeal.Recipes).Return(expectedProducts, nil)
 
-		menu, err := service.CreateMenu(ctx, userID, startDate, endDate)
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
+	meal, products, err := service.GetMeal(ctx, userID)
 
-		if menu.UserID != userID {
-			t.Errorf("Expected user ID %s, got %s", userID, menu.UserID)
-		}
-
-		if menu.StartDate != startDate {
-			t.Errorf("Expected start date %v, got %v", startDate, menu.StartDate)
-		}
-
-		if menu.EndDate != endDate {
-			t.Errorf("Expected end date %v, got %v", endDate, menu.EndDate)
-		}
-	})
-
-	t.Run("invalid dates", func(t *testing.T) {
-		userID := "test-user"
-		startDate := time.Now()
-		endDate := startDate.Add(-24 * time.Hour) // endDate before startDate
-
-		_, err := service.CreateMenu(ctx, userID, startDate, endDate)
-		if err == nil {
-			t.Fatal("Expected error for invalid dates, got nil")
-		}
-
-		var validationErr *oops.ValidationError
-		if !errors.As(err, &validationErr) {
-			t.Errorf("Expected ValidationError, got %T", err)
-		}
-	})
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMeal, meal)
+	assert.Equal(t, expectedProducts, products)
 }
 
-func TestService_GetMenu(t *testing.T) {
-	store := mock.NewStore()
-	service := menu.NewService(store)
-	ctx := context.Background()
-
-	testMenu := &menu.Menu{
-		ID:        "test-id",
-		UserID:    "test-user",
-		StartDate: time.Now(),
-		EndDate:   time.Now().Add(24 * time.Hour),
-		CreatedAt: time.Now(),
+func TestIsActual(t *testing.T) {
+	now := time.Now()
+	menuData := []menu.Menu{
+		{MealID: "meal1", Time: now, MealType: "breakfast"},
+		{MealID: "meal2", Time: now.Add(-24 * time.Hour), MealType: "dinner"},
 	}
 
-	store.SetMenu(testMenu)
+	assert.True(t, menu.IsActual(menuData))
+	assert.False(t, menu.IsActual([]menu.Menu{
+		{MealID: "meal3", Time: now.Add(-24 * time.Hour), MealType: "lunch"},
+	}))
+}
 
-	t.Run("successful get", func(t *testing.T) {
-		menu, err := service.GetMenu(ctx, testMenu.ID)
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
+func TestFindClosestMeal(t *testing.T) {
+	now := time.Now()
+	menuData := []menu.Menu{
+		{MealID: "meal1", Time: now.Add(1 * time.Hour), MealType: "lunch"},
+		{MealID: "meal2", Time: now.Add(2 * time.Hour), MealType: "dinner"},
+	}
 
-		if menu.ID != testMenu.ID {
-			t.Errorf("Expected menu ID %s, got %s", testMenu.ID, menu.ID)
-		}
-	})
+	mealID, err := menu.FindClosestMeal(menuData)
+	assert.NoError(t, err)
+	assert.Equal(t, "meal1", mealID)
 
-	t.Run("not found", func(t *testing.T) {
-		_, err := service.GetMenu(ctx, "non-existent-id")
-		if err == nil {
-			t.Fatal("Expected error for non-existent menu, got nil")
-		}
+	_, err = menu.FindClosestMeal([]menu.Menu{})
+	assert.ErrorIs(t, err, oops.ErrInvalidDates)
+}
 
-		if !errors.Is(err, oops.ErrMenuNotFound) {
-			t.Errorf("Expected ErrMenuNotFound, got %v", err)
-		}
-	})
+func TestRescheduleMenu(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStore := mocks.NewMockStore(ctrl)
+	service := menu.NewService(mockStore, nil)
+
+	ctx := context.Background()
+	userID := "123"
+	menuData := []menu.Menu{
+		{MealID: "meal1", Time: time.Now(), MealType: "lunch"},
+		{MealID: "meal2", Time: time.Now().Add(1 * time.Hour), MealType: "dinner"},
+	}
+
+	mockStore.EXPECT().UpdateMenu(ctx, userID, gomock.Any()).Return(nil)
+
+	updatedMenu, err := service.RescheduleMenu(ctx, menuData, userID)
+	assert.NoError(t, err)
+	assert.Len(t, updatedMenu, len(menuData))
+
+	for _, v := range updatedMenu {
+		assert.True(t, v.Time.After(time.Now()))
+	}
+}
+
+func TestGetMenu(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockStore := mocks.NewMockStore(ctrl)
+	service := menu.NewService(mockStore, nil)
+
+	ctx := context.Background()
+	userID := "123"
+	expectedMenu := []menu.Menu{
+		{MealID: "meal1", Time: time.Now(), MealType: "breakfast"},
+	}
+
+	mockStore.EXPECT().LoadMenu(ctx, userID).Return(expectedMenu, nil)
+
+	menu, err := service.GetMenu(ctx, userID)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMenu, menu)
 }
