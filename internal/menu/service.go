@@ -113,8 +113,8 @@ func (s *AppService) RescheduleMenu(ctx context.Context, currentMenu []Menu, use
 	})
 
 	// Обновляем даты на неделю вперед
-	for _, v := range currentMenu {
-		v.Time = v.Time.Add(7 * 24 * time.Hour)
+	for i := range currentMenu {
+		currentMenu[i].Time = currentMenu[i].Time.Add(7 * 24 * time.Hour)
 	}
 
 	if err := s.storage.UpdateMenu(ctx, userID, currentMenu); err != nil {

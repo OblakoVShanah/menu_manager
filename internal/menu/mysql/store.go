@@ -32,6 +32,7 @@ func (s *Storage) LoadMenu(ctx context.Context, userID string) ([]menu.Menu, err
 	if err != nil {
 		return nil, oops.NewDBError(err, "LoadMenu", userID)
 	}
+	defer rows.Close()
 
 	var menuList []menu.Menu
 	for rows.Next() {
@@ -99,8 +100,8 @@ func (s *Storage) LoadMeal(ctx context.Context, mealID string) (*menu.Meal, erro
 		}
 
 		meal.DishIDs = append(meal.DishIDs, dishID)
-		meal.DishIDs = append(meal.DishNames, dishName)
-		meal.DishIDs = append(meal.Recipes, recipeJson)
+		meal.DishNames = append(meal.DishNames, dishName)
+		meal.Recipes = append(meal.Recipes, recipeJson)
 
 		// Парсим JSON в структуру
 		var nutritionalValue common.NutritionalValueAbsolute
@@ -121,15 +122,15 @@ func (s *Storage) LoadMeal(ctx context.Context, mealID string) (*menu.Meal, erro
 // UpdateMenu обновляет время и даты приемов пищи
 func (s *Storage) UpdateMenu(ctx context.Context, userID string, menuList []menu.Menu) error {
 	// Начинаем транзакцию
-	tx, err := s.db.Begin()
+	tx, err := s.db.Beginx()
 	if err != nil {
 		return oops.NewDBError(err, "failed to begin transaction", userID)
 	}
 
 	// Обновляем каждую запись
-	updateQuery := "UPDATE menu SET eat_date = $1 WHERE userID = $2 AND meal_id = $3"
-	for _, menu := range menuList {
-		_, err := tx.Exec(updateQuery, menu.Time, userID, menu.MealID)
+	updateQuery := "UPDATE menu SET eat_date = $1 WHERE user_id = $2 AND meal_id = $3"
+	for _, m := range menuList {
+		_, err := tx.Exec(updateQuery, m.Time, userID, m.MealID)
 		if err != nil {
 			// При ошибке откатываем транзакцию
 			tx.Rollback()

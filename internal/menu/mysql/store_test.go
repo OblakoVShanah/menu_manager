@@ -87,7 +87,7 @@ func TestLoadMeal_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "meal1", meal.MealID)
 	assert.Len(t, meal.DishIDs, 2)
-	assert.Equal(t, nutrition, meal.TotalNutrition)
+	assert.Equal(t, nutrition.AddAbsoluteValue(nutrition), meal.TotalNutrition)
 }
 
 func TestLoadMeal_QueryError(t *testing.T) {
@@ -115,7 +115,7 @@ func TestUpdateMenu_Success(t *testing.T) {
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`UPDATE menu SET eat_date = \$1 WHERE userID = \$2 AND meal_id = \$3`).
+	mock.ExpectExec(`UPDATE menu SET eat_date = \$1 WHERE user_id = \$2 AND meal_id = \$3`).
 		WithArgs(sqlmock.AnyArg(), "123", "meal1").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()

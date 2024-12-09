@@ -23,10 +23,12 @@ func NewClient(baseURL string) *bClient {
 	}
 }
 
+var JsonMarshal = json.Marshal
+
 // GetProducts retrieves products from the barn_manager service
 func (c *bClient) GetProducts(ctx context.Context, recipes []string) (string, error) {
 
-	data, err := json.Marshal(recipes)
+	data, err := JsonMarshal(recipes)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal product: %w", err)
 	}

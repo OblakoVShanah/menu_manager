@@ -3,6 +3,7 @@ package menu_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"menu_manager/internal/menu"
 	"net/http"
 	"net/http/httptest"
@@ -45,12 +46,16 @@ func TestGetProducts_Success(t *testing.T) {
 }
 
 func TestGetProducts_MarshalError(t *testing.T) {
+	originalMarshal := menu.JsonMarshal
+	defer func() { menu.JsonMarshal = originalMarshal }()
+
+	menu.JsonMarshal = func(v interface{}) ([]byte, error) {
+		return nil, fmt.Errorf("mock marshal error")
+	}
+
 	client := menu.NewClient("http://example.com")
 
-	// Пробуем вызвать GetProducts с некорректными данными
-	_, err := client.GetProducts(context.Background(), []string{string([]byte{0xff})})
-
-	// Проверяем, что ошибка корректно обработана
+	_, err := client.GetProducts(context.Background(), []string{"valid_string"})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to marshal product")
 }
