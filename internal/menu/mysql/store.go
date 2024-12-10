@@ -25,7 +25,7 @@ func (s *Storage) LoadMenu(ctx context.Context, userID string) ([]menu.Menu, err
 	query := `
 		SELECT meal_id, eat_date, meal_type
 		FROM menu
-		WHERE user_id = $1
+		WHERE user_id = ?
 	`
 
 	rows, err := s.db.QueryContext(ctx, query, userID)
@@ -56,9 +56,9 @@ func (s *Storage) LoadMeal(ctx context.Context, mealID string) (*menu.Meal, erro
 
 	// текст запроса
 	query := `
-		SELECT dish_id, name, recipe, total_nutrition
+		SELECT dish_id, name, recipie, total_nutrition
 		FROM dishes
-		WHERE meal_id = $1
+		WHERE meal_id = ?
 	`
 	// выполняем запрос к БД
 	rows, err := s.db.QueryContext(ctx, query, mealID)
@@ -115,7 +115,7 @@ func (s *Storage) LoadMeal(ctx context.Context, mealID string) (*menu.Meal, erro
 	if err = rows.Err(); err != nil {
 		return nil, oops.NewDBError(err, "LoadMeal.Rows", mealID)
 	}
-
+	// log.Println(meal.Recipes)
 	return &meal, nil
 }
 
@@ -128,7 +128,7 @@ func (s *Storage) UpdateMenu(ctx context.Context, userID string, menuList []menu
 	}
 
 	// Обновляем каждую запись
-	updateQuery := "UPDATE menu SET eat_date = $1 WHERE user_id = $2 AND meal_id = $3"
+	updateQuery := "UPDATE menu SET eat_date = ? WHERE user_id = ? AND meal_id = ?"
 	for _, m := range menuList {
 		_, err := tx.Exec(updateQuery, m.Time, userID, m.MealID)
 		if err != nil {

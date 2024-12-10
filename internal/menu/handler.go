@@ -31,10 +31,13 @@ func (h *Handler) Register() {
 // getMeal получает описание следующего приема пиши и список продуктов, которые нужно докупить
 func (h *Handler) getMeal(w http.ResponseWriter, r *http.Request) {
 
-	// get user id
-	userID := "123"
+	// Извлекаем userID из query-параметров
+	userID := string(r.URL.Query().Get("user_id"))
+	if userID == "" {
+		http.Error(w, "missing user_id parameter", http.StatusBadRequest)
+		return
+	}
 
-	//
 	meal, products, err := h.service.GetMeal(r.Context(), userID)
 
 	if err != nil {

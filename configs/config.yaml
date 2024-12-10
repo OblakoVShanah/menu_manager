@@ -1,0 +1,5 @@
+host: "127.0.0.1"
+port: "8080"
+barnurl: "http://localhost:8082"
+db:
+  dsn: "menu_manager:menu_manager@tcp(localhost:3306)/menu_test?parseTime=true&loc=Local"

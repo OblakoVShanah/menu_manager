@@ -9,7 +9,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	config, err := app.NewConfig("config.yaml")
+	config, err := app.NewConfig("configs/config.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,7 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = app.Setup(ctx, config.DB.DSN); err != nil {
+	if err = app.Setup(ctx, config.DB.DSN, config.BarnURL); err != nil {
 		log.Fatal(err)
 	}
 

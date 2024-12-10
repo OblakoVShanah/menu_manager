@@ -12,14 +12,16 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
 // App это структура приложения
 type App struct {
-	config *Config
-	router *chi.Mux
-	http   *http.Server
+	config  *Config
+	router  *chi.Mux
+	http    *http.Server
+	barnURL string
 }
 
 // New создает новое приложение
@@ -38,13 +40,14 @@ func New(ctx context.Context, config *Config) (*App, error) {
 			WriteTimeout:      15 * time.Second,
 			IdleTimeout:       30 * time.Second,
 		},
+		barnURL: config.BarnURL,
 	}, nil
 }
 
 // Setup инициализирует приложение
-func (a *App) Setup(ctx context.Context, dsn string) error {
+func (a *App) Setup(ctx context.Context, dsn string, barnURL string) error {
 	// Инициализация подключения к базе данных
-	db, err := sqlx.ConnectContext(ctx, "postgres", dsn)
+	db, err := sqlx.ConnectContext(ctx, "mysql", dsn)
 	if err != nil {
 		return fmt.Errorf("не удалось подключиться к базе данных: %w", err)
 	}
@@ -54,8 +57,10 @@ func (a *App) Setup(ctx context.Context, dsn string) error {
 		return fmt.Errorf("не удалось выполнить ping базы данных: %w", err)
 	}
 
+	// log.Println(barnURL)
+
 	// Инициализация клиента для barn manaager
-	client := menu.NewClient(a.http.Addr)
+	client := menu.NewClient(barnURL)
 
 	// Инициализация хранилища menu
 	store := storage.NewStorage(db)

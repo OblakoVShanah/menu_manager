@@ -6,7 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	common "menu_manager/internal/models"
 	"net/http"
+	"strings"
 )
 
 // Client represents an HTTP client for the barn_manager service
@@ -28,12 +31,16 @@ var JsonMarshal = json.Marshal
 // GetProducts retrieves products from the barn_manager service
 func (c *bClient) GetProducts(ctx context.Context, recipes []string) (string, error) {
 
-	data, err := JsonMarshal(recipes)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal product: %w", err)
-	}
+	recipeString := "[" + strings.Join(recipes, ", ") + "]"
+	log.Println(recipeString)
+	data := []byte(recipeString)
 
-	resp, err := c.client.Post(c.baseURL+"/api/v1/products", "application/json", bytes.NewBuffer(data))
+	// data, err := JsonMarshal(recipeString)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to marshal product: %w", err)
+	// }
+
+	resp, err := c.client.Post(c.baseURL+"/api/v1/products/check-availability", "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return "", fmt.Errorf("failed to get products: %w", err)
 	}
@@ -45,10 +52,18 @@ func (c *bClient) GetProducts(ctx context.Context, recipes []string) (string, er
 		return "", fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 
-	var products string
-	if err := json.NewDecoder(resp.Body).Decode(&products); err != nil {
+	var productResp struct {
+		Products []common.Product `json:"products"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&productResp); err != nil {
 		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return products, nil
+	// Преобразуем результат в строку
+	resultBytes, err := json.Marshal(productResp)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal product response: %w", err)
+	}
+	return string(resultBytes), nil
 }

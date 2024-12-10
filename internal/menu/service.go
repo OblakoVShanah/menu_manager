@@ -2,6 +2,7 @@ package menu
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"menu_manager/internal/oops"
 	"time"
@@ -77,6 +78,7 @@ func FindClosestMeal(menu []Menu) (string, error) {
 
 	// Получаем текущую дату
 	now := time.Now()
+	log.Println(now)
 	minDist := 24
 	minID := ""
 	for _, v := range menu {

@@ -2,6 +2,7 @@
 
 CREATE TABLE menu_test.menu (
     meal_id VARCHAR(36) PRIMARY KEY,
+    meal_type VARCHAR(255) NOT NULL,
     eat_date TIMESTAMP NOT NULL,
     user_id VARCHAR(36) NOT NULL
 );
@@ -10,20 +11,19 @@ CREATE TABLE menu_test.dishes (
     meal_id VARCHAR(36) NOT NULL,
     dish_id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL,
     recipie JSON NOT NULL,
     total_nutrition JSON NOT NULL
 );
 
 
 -- Insert example data
-INSERT INTO menu_test.menu (meal_id, eat_date, user_id) VALUES
-('1', '2024-03-20 08:00:00', 'kolya'),
-('2', '2024-03-20 13:00:00', 'kolya'),
-('3', '2024-03-20 19:00:00', 'dan');
+INSERT INTO menu_test.menu (meal_id, meal_type, eat_date, user_id) VALUES
+('1', 'breakfast', '2024-03-20 08:00:00', 'kolya'),
+('2', 'lunch', '2024-03-20 13:00:00', 'kolya'),
+('3', 'dinner', '2024-03-20 19:00:00', 'dan');
 
-INSERT INTO menu_test.dishes (meal_id, dish_id, name, type, recipie, total_nutrition) VALUES
-('1', '1', 'Овсяная каша', 'breakfast', 
+INSERT INTO menu_test.dishes (meal_id, dish_id, name, recipie, total_nutrition) VALUES
+('1', '1', 'Овсяная каша', 
     JSON_OBJECT(
         'ingredients', JSON_ARRAY(
             JSON_OBJECT(
@@ -50,7 +50,7 @@ INSERT INTO menu_test.dishes (meal_id, dish_id, name, type, recipie, total_nutri
         'carbohydrates', 55
     )
 ),
-('2', '2', 'Куриный суп', 'lunch',
+('2', '2', 'Куриный суп',
     JSON_OBJECT(
         'ingredients', JSON_ARRAY(
             JSON_OBJECT(
@@ -77,7 +77,7 @@ INSERT INTO menu_test.dishes (meal_id, dish_id, name, type, recipie, total_nutri
         'carbohydrates', 25
     )
 ),
-('2', '4', 'Рататуй', 'lunch',
+('2', '4', 'Рататуй',
     JSON_OBJECT(
         'ingredients', JSON_ARRAY(
             JSON_OBJECT(
@@ -104,7 +104,7 @@ INSERT INTO menu_test.dishes (meal_id, dish_id, name, type, recipie, total_nutri
         'carbohydrates', 259
     )
 ),
-('3', '3', 'Сила Земли', 'dinner',
+('3', '3', 'Сила Земли',
     JSON_OBJECT(
         'ingredients', JSON_ARRAY(
             JSON_OBJECT(
@@ -128,7 +128,7 @@ INSERT INTO menu_test.dishes (meal_id, dish_id, name, type, recipie, total_nutri
     JSON_OBJECT(
         'calories', 100500,
         'proteins', 42,
-        'fats', -10,
+        'fats', 10,
         'carbohydrates', 25
     )
 );
