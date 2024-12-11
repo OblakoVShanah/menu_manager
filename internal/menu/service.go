@@ -79,6 +79,7 @@ func FindClosestMeal(menu []Menu) (string, error) {
 	// Получаем текущую дату
 	now := time.Now()
 	log.Println(now)
+	log.Println(menu)
 	minDist := 24
 	minID := ""
 	for _, v := range menu {

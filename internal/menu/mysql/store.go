@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"encoding/json"
+	"log"
 
 	"menu_manager/internal/menu"
 	common "menu_manager/internal/models"
@@ -27,7 +28,7 @@ func (s *Storage) LoadMenu(ctx context.Context, userID string) ([]menu.Menu, err
 		FROM menu
 		WHERE user_id = ?
 	`
-
+	log.Println("UserID - " + userID)
 	rows, err := s.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, oops.NewDBError(err, "LoadMenu", userID)
@@ -47,7 +48,9 @@ func (s *Storage) LoadMenu(ctx context.Context, userID string) ([]menu.Menu, err
 		}
 		menuList = append(menuList, m)
 	}
-
+	if len(menuList) == 0 {
+		return nil, oops.ErrNoData
+	}
 	return menuList, nil
 }
 
